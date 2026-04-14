@@ -87,14 +87,16 @@ You can also set custom platform keys with `setPlatformKey()`.
 
 ## Version Comparison
 
-QSimpleUpdater supports semantic versioning with optional pre-release suffixes:
+QSimpleUpdater supports semantic versioning with optional pre-release suffixes and date-time suffixes:
 
 - `1.2.3` vs `1.2.4` — patch upgrade detected
 - `v1.0.0-alpha1` vs `v1.0.0` — stable is newer than pre-release
 - `v1.0.0-alpha1` vs `v1.0.0-beta1` — beta is newer than alpha
 - `v1.0.0-rc1` vs `v1.0.0-rc2` — rc2 is newer than rc1
+- `1.3.2-2026-04-14-10-00` vs `1.3.2-2026-04-13-09-00` — newer date-time build is newer
 
 The `v` prefix is optional and ignored during comparison.
+Date-time suffixes in the form `YYYY-MM-DD-HH-mm` are compared numerically component by component.
 
 ## FAQ
 
@@ -167,6 +169,20 @@ connect(QSimpleUpdater::getInstance(), &QSimpleUpdater::downloadFinished,
         [](const QString &url, const QString &filepath) {
     // Handle the downloaded file at 'filepath'
 });
+```
+
+### 7. Can I configure backup URLs if the primary update server is unreachable?
+
+Yes. You can specify one or more backup URLs. If the primary URL fails, QSimpleUpdater will automatically retry each backup URL in order. The `checkingFinished` signal is only emitted after all URLs have been exhausted.
+
+```cpp
+QString url = "https://primary.example.com/updates.json";
+QStringList backups;
+backups << "https://mirror1.example.com/updates.json"
+        << "https://mirror2.example.com/updates.json";
+
+QSimpleUpdater::getInstance()->setBackupUrls(url, backups);
+QSimpleUpdater::getInstance()->checkForUpdates(url);
 ```
 
 ## License
