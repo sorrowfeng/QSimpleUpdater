@@ -58,6 +58,7 @@ public:
   QString moduleVersion() const;
   QString latestVersion() const;
   QString userAgentString() const;
+  QNetworkReply::NetworkError networkError() const;
   bool mandatoryUpdate() const;
 
   bool customAppcast() const;
@@ -104,6 +105,7 @@ private:
   bool m_updateAvailable;
   bool m_downloaderEnabled;
   bool m_mandatoryUpdate;
+  QNetworkReply::NetworkError m_networkError;
 
   QString m_openUrl;
   QString m_platform;

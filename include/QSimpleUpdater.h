@@ -24,6 +24,7 @@
 #define _QSIMPLEUPDATER_MAIN_H
 
 #include <QList>
+#include <QNetworkReply>
 #include <QObject>
 #include <QUrl>
 
@@ -82,6 +83,7 @@ public:
   QString getLatestVersion(const QString& url) const;
   QString getModuleVersion(const QString& url) const;
   QString getUserAgentString(const QString& url) const;
+  QNetworkReply::NetworkError getNetworkError(const QString& url) const;
 
 public slots:
   void checkForUpdates(const QString& url);

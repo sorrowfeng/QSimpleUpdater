@@ -55,6 +55,7 @@ Updater::Updater()
   , m_downloader(new Downloader())
   , m_manager(new QNetworkAccessManager())
   , m_currentUrlIndex(0)
+  , m_networkError(QNetworkReply::NoError)
 {
 #if defined Q_OS_WIN
   m_platform = "windows";
@@ -434,6 +435,14 @@ void Updater::setDownloadPassword(const QString& password)
 }
 
 /**
+ * @brief Returns the last network error encountered while checking for updates.
+ */
+QNetworkReply::NetworkError Updater::networkError() const
+{
+  return m_networkError;
+}
+
+/**
  * @brief Called when the download of the update definitions file is finished.
  *
  * Parses the JSON response, extracts platform-specific update information,
@@ -443,6 +452,9 @@ void Updater::onReply(QNetworkReply* reply)
 {
   // Ensure the reply is cleaned up when we're done
   reply->deleteLater();
+
+  // Record the network error status
+  m_networkError = reply->error();
 
   // Check if we need to redirect
   QUrl redirect = reply->attribute(QNetworkRequest::RedirectionTargetAttribute).toUrl();

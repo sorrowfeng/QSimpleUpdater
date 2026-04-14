@@ -314,6 +314,18 @@ QString QSimpleUpdater::getUserAgentString(const QString& url) const
 }
 
 /**
+ * @brief Returns the last network error of the Updater registered with the
+ *        given @a url.
+ *
+ * @note If no Updater is registered with the given @a url, one will be created
+ *       automatically.
+ */
+QNetworkReply::NetworkError QSimpleUpdater::getNetworkError(const QString& url) const
+{
+  return getUpdater(url)->networkError();
+}
+
+/**
  * @brief Instructs the Updater registered with the given @a url to download
  *        and interpret the update definitions file.
  *
