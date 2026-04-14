@@ -48,7 +48,7 @@ QSimpleUpdater *QSimpleUpdater::getInstance()
 
 bool QSimpleUpdater::compareVersions(const QString &remote, const QString &local)
 {
-   static QRegularExpression re("v?(\\d+)(?:\\.(\\d+))?(?:\\.(\\d+))?(?:-(\\w+)(?:(\\d+))?)?");
+   static QRegularExpression re(R"(v?(\d+)(?:\.(\d+))?(?:\.(\d+))?(?:-([\w\-\.]+))?)");
    QRegularExpressionMatch remoteMatch = re.match(remote);
    QRegularExpressionMatch localMatch = re.match(local);
 
@@ -78,13 +78,30 @@ bool QSimpleUpdater::compareVersions(const QString &remote, const QString &local
    if (!remoteSuffix.isEmpty() && localSuffix.isEmpty())
       // Remote is pre-release, local is stable
       return false;
-   if (remoteSuffix != localSuffix)
-      // Compare suffixes lexicographically
-      return remoteSuffix > localSuffix;
+   if (remoteSuffix == localSuffix)
+      return false;
 
-   int remoteSuffixNum = remoteMatch.captured(5).toInt();
-   int localSuffixNum = localMatch.captured(5).toInt();
-   return remoteSuffixNum > localSuffixNum;
+   // Try to compare date-time suffixes like YYYY-MM-DD-HH-mm
+   static QRegularExpression dateRe(R"((\d{4})-(\d{2})-(\d{2})-(\d{2})-(\d{2}))");
+   QRegularExpressionMatch remoteDate = dateRe.match(remoteSuffix);
+   QRegularExpressionMatch localDate = dateRe.match(localSuffix);
+
+   if (remoteDate.hasMatch() && localDate.hasMatch())
+   {
+      for (int i = 1; i <= 5; ++i)
+      {
+         int r = remoteDate.captured(i).toInt();
+         int l = localDate.captured(i).toInt();
+         if (r > l)
+            return true;
+         if (l > r)
+            return false;
+      }
+      return false; // completely equal
+   }
+
+   // Compare suffixes lexicographically
+   return remoteSuffix > localSuffix;
 }
 
 /**
