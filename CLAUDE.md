@@ -49,7 +49,7 @@ Key CMake options: `QSIMPLE_UPDATER_BUILD_TUTORIAL`, `QSIMPLE_UPDATER_BUILD_TEST
 QSimpleUpdater: cross-platform auto-update library for Qt applications.
 MIT license. Supports Qt 5 and Qt 6. C++17.
 
-Features: JSON-based update definitions, semantic version comparison (with pre-release suffixes), integrated download UI, mandatory update enforcement, HTTP basic auth, custom appcast parsing.
+Features: JSON-based update definitions, semantic version comparison (with pre-release and date-time suffixes), integrated download UI, mandatory update enforcement, HTTP basic auth, custom appcast parsing, backup URL retry.
 
 ## Directory Structure
 
@@ -91,6 +91,7 @@ QSimpleUpdater (singleton)
 User calls checkForUpdates(url)
   → Updater downloads JSON from url
   → Updater::onReply() parses JSON, extracts platform info
+    (or retries backup URLs on network failure)
   → Updater::setUpdateAvailable() shows QMessageBox
   → User clicks Yes → Downloader::startDownload()
   → Downloader emits downloadFinished(url, filepath)
@@ -125,6 +126,16 @@ Platform keys: `windows`, `osx`, `linux`, `ios`, `android` (or custom via `setPl
 | `QNetworkAccessManager` | `Updater` + `Downloader` | `delete` in destructors |
 | `QNetworkReply` | `Downloader::m_reply` | `deleteLater()` on cleanup, nullptr after use |
 
+### Backup URLs
+
+`Updater` stores a primary URL (`m_primaryUrl`) and an optional list of backup URLs (`m_backupUrls`). When `checkForUpdates()` is called:
+
+1. Index resets to 0 and the primary URL is tried first.
+2. If `onReply()` encounters a network error, it increments the index and calls `doCheckForUpdates()` to try the next backup URL.
+3. Only when all URLs have been exhausted does it emit `checkingFinished(url)` with `updateAvailable = false`.
+
+Backups are configured via `QSimpleUpdater::setBackupUrls(url, QStringList)`.
+
 ### Key Invariants
 
 - `m_reply` is always `nullptr` when no download is active. Null-checked before every access.
@@ -138,6 +149,21 @@ Platform keys: `windows`, `osx`, `linux`, `ios`, `android` (or custom via `setPl
 
 100-column limit, 2-space indent. Pointer/reference bind to type (`int* ptr`, `const Foo& ref`).
 Run `clang-format` (config in `.clang-format`).
+
+### Comments & Doxygen
+
+### Version Comparison
+
+`QSimpleUpdater::compareVersions()` supports:
+- Standard semantic versions: `1.2.3`, `v2.0.0`
+- Pre-release suffixes: `1.0.0-alpha1`, `2.0.0-beta2`, `2.0.0-rc1`
+- Date-time build suffixes: `1.3.2-2026-04-14-10-00`
+
+Rules:
+1. Major, minor, and patch numbers are compared numerically.
+2. A stable release (no suffix) is always newer than a pre-release of the same version.
+3. For pre-release suffixes, if both match a `YYYY-MM-DD-HH-mm` pattern, they are compared numerically component by component.
+4. Otherwise, suffixes are compared lexicographically (e.g. `beta > alpha`).
 
 ### Comments & Doxygen
 
