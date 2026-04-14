@@ -28,6 +28,7 @@
 #include <QNetworkAccessManager>
 #include <QNetworkReply>
 #include <QObject>
+#include <QStringList>
 #include <QUrl>
 
 class Downloader;
@@ -69,6 +70,7 @@ public:
 public slots:
   void checkForUpdates();
   void setUrl(const QString& url);
+  void setBackupUrls(const QStringList& urls);
   void setModuleName(const QString& name);
   void setNotifyOnUpdate(const bool notify);
   void setNotifyOnFinish(const bool notify);
@@ -86,12 +88,14 @@ public slots:
 private slots:
   void onReply(QNetworkReply* reply);
   void setUpdateAvailable(const bool available);
+  void doCheckForUpdates();
 
 private:
   bool compare(const QString& x, const QString& y);
 
 private:
   QString m_url;
+  QString m_primaryUrl;
   QString m_userAgentString;
 
   bool m_customAppcast;
@@ -112,6 +116,9 @@ private:
   QString m_downloadPassword;
   Downloader* m_downloader;
   QNetworkAccessManager* m_manager;
+
+  QStringList m_backupUrls;
+  int m_currentUrlIndex;
 };
 
 #endif

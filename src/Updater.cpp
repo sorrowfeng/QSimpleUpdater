@@ -39,6 +39,7 @@
  */
 Updater::Updater()
   : m_url("")
+  , m_primaryUrl("")
   , m_customAppcast(false)
   , m_notifyOnUpdate(true)
   , m_notifyOnFinish(false)
@@ -53,6 +54,7 @@ Updater::Updater()
   , m_latestVersion("")
   , m_downloader(new Downloader())
   , m_manager(new QNetworkAccessManager())
+  , m_currentUrlIndex(0)
 {
 #if defined Q_OS_WIN
   m_platform = "windows";
@@ -249,9 +251,26 @@ bool Updater::useCustomInstallProcedures() const
 /**
  * @brief Downloads and interprets the update definitions file referenced by
  *        the @c url() function.
+ *
+ * If backup URLs have been configured and the primary URL fails, the updater
+ * will automatically retry each backup URL before emitting @c checkingFinished().
  */
 void Updater::checkForUpdates()
 {
+  m_currentUrlIndex = 0;
+  doCheckForUpdates();
+}
+
+/**
+ * @brief Performs the actual network request for @c checkForUpdates().
+ */
+void Updater::doCheckForUpdates()
+{
+  if (m_currentUrlIndex > 0 && m_currentUrlIndex <= m_backupUrls.size())
+    m_url = m_backupUrls.at(m_currentUrlIndex - 1);
+  else
+    m_url = m_primaryUrl;
+
   QNetworkRequest request(url());
   request.setAttribute(QNetworkRequest::RedirectPolicyAttribute,
                        QNetworkRequest::NoLessSafeRedirectPolicy);
@@ -268,6 +287,19 @@ void Updater::checkForUpdates()
 void Updater::setUrl(const QString& url)
 {
   m_url = url;
+  m_primaryUrl = url;
+}
+
+/**
+ * @brief Sets the backup URLs for the updater.
+ *
+ * When the primary URL fails, the updater will try each backup URL in order.
+ * Only when all URLs have failed will the @c checkingFinished() signal be
+ * emitted with @c updateAvailable set to @c false.
+ */
+void Updater::setBackupUrls(const QStringList& urls)
+{
+  m_backupUrls = urls;
 }
 
 /**
@@ -420,8 +452,14 @@ void Updater::onReply(QNetworkReply* reply)
     return;
   }
 
-  // There was a network error
+  // There was a network error — try backup URLs if available
   if (reply->error() != QNetworkReply::NoError) {
+    ++m_currentUrlIndex;
+    if (m_currentUrlIndex <= m_backupUrls.size()) {
+      doCheckForUpdates();
+      return;
+    }
+
     setUpdateAvailable(false);
     emit checkingFinished(url());
     return;

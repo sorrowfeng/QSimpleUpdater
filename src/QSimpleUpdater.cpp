@@ -484,6 +484,18 @@ void QSimpleUpdater::setDownloadPassword(const QString& url, const QString& pass
 }
 
 /**
+ * @brief Sets the backup URLs for the Updater registered with the given @a url.
+ *
+ * When the primary URL fails, the updater will try each backup URL in order.
+ * Only when all URLs have failed will the @c checkingFinished() signal be
+ * emitted with @c updateAvailable set to @c false.
+ */
+void QSimpleUpdater::setBackupUrls(const QString& url, const QStringList& urls)
+{
+  getUpdater(url)->setBackupUrls(urls);
+}
+
+/**
  * @brief Returns the Updater instance registered with the given @a url.
  *
  * If no Updater is registered with the given @a url, a new one is created and
